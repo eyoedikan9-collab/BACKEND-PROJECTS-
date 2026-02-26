@@ -1,21 +1,42 @@
 import json
+import psycopg2
+
+conn = psycopg2.connect(
+    database="taskmanager",
+    user="root",
+    password="root",
+    host="localhost",
+    port="5432"
+)
 
 def add_task():
     task_ = input("Enter task: ")
     date_time = input("Enter task time: ")
     duration = input("Enter task duration: ")
-    new_task_data = {"Task": task_, "Date/Time": date_time, "Duration": duration, "status": "pending"}
-    try:
-        with open('task.json', 'r') as f:
-            data = json.load(f)
-        data.append(new_task_data)
-        with open('task.json', 'w') as f:
-            data = json.dump(data, f, indent=4)
-    except FileNotFoundError:
-        data = []
-        data.append(new_task_data)
-        with open('task.json', 'w') as f:
-            data = json.dump(data, f, indent=4)
+    query = """INSERT INTO tasks (task, duration, status)
+    VALUES (%s, %s, %s)
+    """
+
+    cur = conn.cursor()
+    cur.execute(query, (task_, duration, "pending"))
+    conn.commit()
+    cur.close()
+    conn.close()
+    print("Task updated to database")
+
+
+    # new_task_data = {"Task": task_, "Date/Time": date_time, "Duration": duration, "status": "pending"}
+    # try:
+    #     with open('task.json', 'r') as f:
+    #         data = json.load(f)
+    #     data.append(new_task_data)
+    #     with open('task.json', 'w') as f:
+    #         data = json.dump(data, f, indent=4)
+    # except FileNotFoundError:
+    #     data = []
+    #     data.append(new_task_data)
+    #     with open('task.json', 'w') as f:
+    #         data = json.dump(data, f, indent=4)
    
 def view_task():
     try:
@@ -95,3 +116,4 @@ while True:
     if output == "Exit":
         break
  
+# cur.execute("UPDATE tasks SET status = completed WHERE task = %s", ("coz",))
