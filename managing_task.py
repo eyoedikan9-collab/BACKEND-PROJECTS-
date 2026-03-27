@@ -8,13 +8,6 @@ conn = psycopg2.connect(
     port="5432"
 )
 cur = conn.cursor()
-def create_tables():
-    cur.execute("""
-                CREATE TABLE IF NOT EXISTS tasks (id serial PRIMARY KEY, 
-                task VARCHAR(255) NOT NULL, created_at TIMESTAMP DEFAULT NOW(), 
-                duration VARCHAR NOT NULL, is_completed VARCHAR(255) DEFAULT 'pending');
-                """)
-    conn.commit()
 
 def add_task():
     task_ = input("Enter task: ").strip().lower()
@@ -71,7 +64,6 @@ def task_menu():
             return "Exit"         
     else:
         print("Invalid choice please check and try again")
-create_tables()
 while True:
     output = task_menu()
     if output == "Exit":
