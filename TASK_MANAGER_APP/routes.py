@@ -1,0 +1,85 @@
+from fastapi import FastAPI
+from fastapi import status, HTTPException
+import uvicorn
+from pydantic import BaseModel
+from typing import List
+from schema import TaskCreate, TaskPublic, UserPublic, UserCreate
+from sqlalchemy.orm import Session
+from fastapi import Depends
+from database import get_db
+from crud_task import *
+from main import get_tasks_for_user
+from main import create_task, create_user
+from main import get_user
+from main import get_all_users
+from main import delete_user
+
+app = FastAPI(title="Todo app")
+
+
+@app.get("/tasks", response_model=List[TaskPublic])
+def get_tasks(db: Session = Depends(get_db)):
+    tasks = get_tasks_for_user(db=db, user_id=1)
+    return tasks
+
+# @app.get("/tasks/{task_id}", response_model=TaskPublic)
+# def get_task_by_id(task_id: str):
+#     print("This resource was accessed")
+#     for task in tasks:
+#         if task["id"] == task_id:
+#             return task
+#     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"No task found with id {task_id}")
+
+
+@app.get("/user/{user_id}", response_model=UserPublic)
+def get_user_by_id(user_id: int, db: Session = Depends(get_db)):
+    a_user = get_user(db=db, user_id=user_id)
+    if not a_user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"User not found!")
+
+    return a_user
+
+
+
+@app.get("/users", response_model=List[UserPublic])
+def get_users(db: Session = Depends(get_db)):
+    all_users = get_all_users(db=db)
+    return all_users
+
+
+@app.post("/task", status_code=status.HTTP_201_CREATED, response_model=TaskPublic)
+def create_new_task(param: TaskCreate, db: Session = Depends(get_db)):
+    created_task = create_task(db, task=param, user_id=1)
+    return created_task
+
+@app.post("/user", status_code=status.HTTP_201_CREATED, response_model=UserPublic)
+def create_a_user(param: UserCreate, db: Session = Depends(get_db)):
+    created_user = create_user(db, user=param)
+    return created_user
+
+
+# @app.delete("/task/{task_id}", response_model=dict)
+# def delete_task(task_id: int, db: Session = Depends(get_db)):
+#     for task in tasks:
+#         if task["id"] == task_id:
+#             tasks.remove(task)
+#             return {"status":f"Item with id {task_id} successfully deleted"}
+#     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"No task found with id {task_id}")
+
+@app.delete("/user/{user_id}")
+def delete_any_user(user_id: int, db: Session = Depends(get_db)):
+    del_user = delete_user(db=db, user_id=user_id)
+    print(del_user)
+    if not del_user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"User not found!")
+    return {f"message": "User deleted successfuly"}
+   
+
+
+if __name__ == "__main__":
+    uvicorn.run("routes:app" , host="127.0.0.1", port=8080, reload=True)
+
+
+#input and output validation with pydantic, defining a respoonse model
+#pagination with offset and limit
+#exception handling with HTTPException
