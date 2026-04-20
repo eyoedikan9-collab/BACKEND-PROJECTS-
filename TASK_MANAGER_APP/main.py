@@ -1,79 +1,69 @@
-from schema import TaskCreate  
-from schema import TaskPublic
-from schema import UserCreate
-from schema import UserPublic
-from fastapi import Depends
+from fastapi import FastAPI
+from fastapi import status, HTTPException
+import uvicorn
+from typing import List
+from schema import TaskCreate, TaskPublic, UserPublic, UserCreate
 from sqlalchemy.orm import Session
+from fastapi import Depends
 from database import get_db
-from models_task import User, Tasks
+from crud_task import *
+from routes import get_tasks_for_user
+from routes import create_task, create_user
+from routes import get_user
+from routes import get_all_users
+from routes import delete_user
+
+app = FastAPI(title="Todo app")
 
 
-
-def create_user(db: Session, user: UserCreate):
-    user = User(**user.model_dump())
-    print(type(user))
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-    print(user)
-
-    return user
-
-
-# def get_user(db: Session, user_id: int, limit: int = 1):
-#     user_id = db.get(User, user_id).limit(limit)
-#     print(user_id)
-
-#     return user_id
-
-def get_user(db: Session, user_id: int, limit: int = 1):
-    user = db.query(User).filter(User.user_id == user_id).first()
-
-    return user
-
-
-
-def get_all_users(db: Session, offset: int = 0, limit: int = 10) -> UserPublic:
-    users = db.query(User).offset(offset).limit(limit).all()
-
-    return users
-
-
-
-def create_task(db: Session, task: TaskCreate, user_id: int) -> TaskCreate:
-    task_data = task.model_dump()
-    task = Tasks(**task_data, user_id=user_id)
-    db.add(task)
-    db.commit()
-    db.refresh(task)
-    task_dict = TaskPublic.model_validate(task)
-    # task_dict["user_id"] = user_id
-    # task_dict = TaskPublic(**task_dict)
-    #pydantic moddel for input validation -> sqlmodel for table mapping -> insert to db
-    # -> pydantic model for output validation
-    return task_dict
-
-
-# def create_task(db: Session, task: TaskCreate, user_id: int):
-#     task_data = task.model_dump()
-#     task = Tasks(**task_data, user_id=user_id)
-#     db.add(task)
-#     db.commit()
-#     db.refresh(task)
-#     print(task)
-
-#     return task
-
-
-def get_tasks_for_user(db: Session, user_id: int):
-    tasks = db.query(Tasks).filter(Tasks.user_id == user_id).all()
-    print(tasks)
-
+@app.get("/tasks", response_model=List[TaskPublic])
+def get_tasks(db: Session = Depends(get_db)):
+    tasks = get_tasks_for_user(db=db, user_id=1)
     return tasks
 
-def delete_user(db: Session, user_id: int):
-    user = db.get(User, user_id)
-    db.delete(user)
-    db.commit()
 
-    return user
+@app.get("/user/{user_id}", response_model=UserPublic)
+def get_user_by_id(user_id: int, db: Session = Depends(get_db)):
+    a_user = get_user(db=db, user_id=user_id)
+    if not a_user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"User not found!")
+
+    return a_user
+
+
+@app.get("/users", response_model=List[UserPublic])
+def get_users(db: Session = Depends(get_db)):
+    all_users = get_all_users(db=db)
+    return all_users
+
+
+@app.post("/task", status_code=status.HTTP_201_CREATED, response_model=TaskPublic)
+def create_new_task(param: TaskCreate, db: Session = Depends(get_db)):
+    created_task = create_task(db, task=param, user_id=1)
+    return created_task
+
+
+@app.post("/user", status_code=status.HTTP_201_CREATED, response_model=UserPublic)
+def create_a_user(param: UserCreate, db: Session = Depends(get_db)):
+    created_user = create_user(db, user=param)
+    return created_user
+
+
+
+@app.delete("/user/{user_id}")
+def delete_any_user(user_id: int, db: Session = Depends(get_db)):
+    del_user = delete_user(db=db, user_id=user_id)
+    print(del_user)
+    if not del_user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"User not found!")
+    return {f"message": "User deleted successfuly"}
+   
+
+
+if __name__ == "__main__":
+    uvicorn.run("main:app" , host="127.0.0.1", port=8080, reload=True)
+
+
+#input and output validation with pydantic, defining a respoonse model
+#pagination with offset and limit
+#exception handling with HTTPException
