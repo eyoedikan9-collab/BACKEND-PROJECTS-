@@ -12,13 +12,21 @@ from routes import create_task, create_user
 from routes import get_user
 from routes import get_all_users
 from routes import delete_user
+from fastapi.security import OAuth2PasswordRequestForm
+from schema import Token
+import auth
+
+
 
 app = FastAPI(title="Todo app")
 
+# @app.post("/auth/token", response_model=Token)
+# def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+#     pass
 
-@app.get("/tasks", response_model=List[TaskPublic])
-def get_tasks(db: Session = Depends(get_db)):
-    tasks = get_tasks_for_user(db=db, user_id=1)
+@app.get("/tasks/{user_id}", response_model=List[TaskPublic])
+def get_tasks(user_id: int, db: Session = Depends(get_db)):
+    tasks = get_tasks_for_user(db=db, user_id=user_id)
     return tasks
 
 
@@ -39,7 +47,7 @@ def get_users(db: Session = Depends(get_db)):
 
 @app.post("/task", status_code=status.HTTP_201_CREATED, response_model=TaskPublic)
 def create_new_task(param: TaskCreate, db: Session = Depends(get_db)):
-    created_task = create_task(db, task=param, user_id=1)
+    created_task = create_task(db, task=param, user_id=5)
     return created_task
 
 

@@ -22,6 +22,7 @@ class UserCreate(BaseModel):
     email: str
     gender: str 
     age: int
+    password: str
 
 
 class UserPublic(BaseModel):
@@ -32,4 +33,6 @@ class UserPublic(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-    
+class Token(BaseModel):
+    access_token: str
+    token_type: str

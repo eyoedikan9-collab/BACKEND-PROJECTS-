@@ -5,18 +5,23 @@ from schema import UserPublic
 from sqlalchemy.orm import Session
 from database import get_db
 from models import User, Tasks
+from auth import hash_password
 
 
+
+def get_user_by_email(db: Session, email: str) -> User | None:
+        return db.query(User).filter(User.email == email).first()
 
 def create_user(db: Session, user: UserCreate):
-    user = User(**user.model_dump())
-    print(type(user))
-    db.add(user)
+    plain_password = user.password
+    hashed_password = hash_password(plain_password)
+    user_data = user.model_dump(exclude={"password"})
+    user_stored = User(**user_data, hashed_password=hashed_password)
+    db.add(user_stored)
     db.commit()
-    db.refresh(user)
-    print(user)
+    db.refresh(user_stored)
 
-    return user
+    return user_stored
 
 def create_task(db: Session, task: TaskCreate, user_id: int) -> TaskCreate:
     task_data = task.model_dump()

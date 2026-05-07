@@ -1,0 +1,37 @@
+from pwdlib import PasswordHash
+from jose import jwt, JWTError
+from datetime import datetime, timedelta, timezone
+
+SECRET_KEY = "7f9c2d8a4b1e6c0f93a5d7e8b2c4f1a6e9doc3b7a8f2e5d1c69a0e3f4d8c2b1"
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
+
+password_hash = PasswordHash.recommended()
+
+
+
+def hash_password(plain_password: str) -> str:
+    return password_hash.hash(plain_password)
+
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return password_hash.verify(plain_password, hashed_password)
+
+
+def create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:
+    to_encode = data.copy
+    if expires_delta:
+        expire = datetime.now(timezone.utc) + expires_delta
+    else:
+        expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+
+    to_encode.update({"exp": expire})
+
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY= SECRET_KEY, algorithm=ALGORITHM)    
+   
+    return encoded_jwt
+
+h = hash_password("hello")
+print(h)                                
+print(verify_password("hello", h)) 
+print(verify_password("wrong", h)) 

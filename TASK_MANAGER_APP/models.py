@@ -1,4 +1,3 @@
-
 from sqlalchemy.orm import DeclarativeBase
 
 class Base(DeclarativeBase):
@@ -19,6 +18,8 @@ class User(Base):
     email: Mapped[str]
     gender:  Mapped[str] = mapped_column(String(20))
     age: Mapped[int]
+    hashed_password: Mapped[str]
+
 
     task: Mapped[List["Tasks"]] = relationship(back_populates="user")
 
