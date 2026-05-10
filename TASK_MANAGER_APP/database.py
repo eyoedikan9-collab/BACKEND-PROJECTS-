@@ -3,16 +3,20 @@ from dotenv import load_dotenv
 from dotenv import dotenv_values
 from sqlalchemy.orm import sessionmaker
 
-load_dotenv()
-config = dotenv_values("TASK_MANAGER_APP/.env")
-user = config["POSTGRES_USER"]
-password = config["POSTGRES_PASSWORD"]
-server = config["POSTGRES_SERVER"]
-database = config["POSTGRES_DATABASE"]
+# load_dotenv()
+# config = dotenv_values(".env")
+# user = config["POSTGRES_USER"]
+# password = config["POSTGRES_PASSWORD"]
+# server = config["POSTGRES_SERVER"]
+# database = config["POSTGRES_DATABASE"]
 
-engine = create_engine(
-    f"postgresql+psycopg2://{user}:{password}@{server}/{database}"
-)
+DATABASE_URL = "sqlite:///./todo.db"
+
+engine = create_engine(DATABASE_URL)
+
+# engine = create_engine(
+#     f"postgresql+psycopg2://{user}:{password}@{server}/{database}"
+#)
 
 SessionLocal = sessionmaker(
     autocommit=False,
