@@ -36,6 +36,8 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
 
 @app.get("/tasks/{user_id}", response_model=List[TaskPublic]) 
 def get_tasks(user_id: int, db: Session = Depends(get_db), current_user = Depends(auth.get_current_user)):
+    if current_user.user_id != user_id:
+        raise HTTPException(status_code=403, detail="Not authorized to access this user's tasks")
     tasks = get_tasks_for_user(db=db, user_id=user_id)
     return tasks
 
@@ -57,7 +59,10 @@ def get_users(db: Session = Depends(get_db)):
 
 @app.post("/task", status_code=status.HTTP_201_CREATED, response_model=TaskPublic)
 def create_new_task(param: TaskCreate, db: Session = Depends(get_db), current_user = Depends(auth.get_current_user)):
-    created_task = create_task(db, task=param, user_id=4)
+    user_id=4
+    if current_user.user_id != user_id:
+        raise HTTPException(status_code=403, detail="Not authorized to access this user's tasks")
+    created_task = create_task(db, task=param, user_id=user_id)
     return created_task
 
 
