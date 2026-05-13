@@ -19,7 +19,7 @@ class User(Base):
     gender:  Mapped[str] = mapped_column(String(20))
     age: Mapped[int]
     hashed_password: Mapped[str]
-
+    role: Mapped[str] = mapped_column(server_default="user") 
 
     task: Mapped[List["Tasks"]] = relationship(back_populates="user")
 
@@ -39,6 +39,8 @@ class Tasks(Base):
     def __repr__(self) -> str:
         return f"Tasks(task_id={self.task_id!r}, task={self.task!r}, date_time={self.date_time!r}, duration={self.duration!r})"
 
-
+# Base.metadata.drop_all(engine)
 Base.metadata.create_all(engine)
+
+
 

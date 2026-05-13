@@ -13,13 +13,14 @@ from routes import get_user
 from routes import get_all_users
 from routes import delete_user
 from routes import get_user_by_email
+from routes import update_role
 from models import User
 from fastapi.security import OAuth2PasswordRequestForm
 from schema import Token
 import auth
 from auth import create_access_token
 from auth import verify_password
- 
+from auth import get_current_admin_user
 
 
 app = FastAPI(title="Todo app")
@@ -34,16 +35,15 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
 
 
 
-@app.get("/tasks/{user_id}", response_model=List[TaskPublic]) 
-def get_tasks(user_id: int, db: Session = Depends(get_db), current_user = Depends(auth.get_current_user)):
-    if current_user.user_id != user_id:
-        raise HTTPException(status_code=403, detail="Not authorized to access this user's tasks")
-    tasks = get_tasks_for_user(db=db, user_id=user_id)
+@app.get("/tasks", response_model=List[TaskPublic]) 
+def get_tasks(db: Session = Depends(get_db), current_user: UserPublic = Depends(auth.get_current_user)):
+    tasks = get_tasks_for_user(db=db, user_id=current_user.user_id)
     return tasks
 
 
+
 @app.get("/user/{user_id}", response_model=UserPublic)
-def get_user_by_id(user_id: int, db: Session = Depends(get_db)):
+def get_user_by_id(user_id: int, db: Session = Depends(get_db), current_user = Depends(get_current_admin_user)):
     a_user = get_user(db=db, user_id=user_id)
     if not a_user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"User not found!")
@@ -51,8 +51,8 @@ def get_user_by_id(user_id: int, db: Session = Depends(get_db)):
     return a_user
 
 
-@app.get("/users", response_model=List[UserPublic])
-def get_users(db: Session = Depends(get_db)):
+@app.get("/users", response_model=List[UserPublic] )
+def get_users(db: Session = Depends(get_db), current_user = Depends(get_current_admin_user)):
     all_users = get_all_users(db=db)
     return all_users
 
@@ -66,7 +66,7 @@ def create_new_task(param: TaskCreate, db: Session = Depends(get_db), current_us
     return created_task
 
 
-@app.post("/user", status_code=status.HTTP_201_CREATED, response_model=UserPublic)
+@app.post("/register", status_code=status.HTTP_201_CREATED, response_model=UserPublic)
 def create_a_user(param: UserCreate, db: Session = Depends(get_db)):
     created_user = create_user(db, user=param)
     return created_user
@@ -74,7 +74,7 @@ def create_a_user(param: UserCreate, db: Session = Depends(get_db)):
 
 
 @app.delete("/user/{user_id}")
-def delete_any_user(user_id: int, db: Session = Depends(get_db)):
+def delete_any_user(user_id: int, db: Session = Depends(get_db), current_user = Depends(get_current_admin_user)):
     del_user = delete_user(db=db, user_id=user_id)
     print(del_user)
     if not del_user:
@@ -82,6 +82,10 @@ def delete_any_user(user_id: int, db: Session = Depends(get_db)):
     return {f"message": "User deleted successfuly"}
    
 
+@app.patch("/user/{user_id}", response_model=UserPublic)
+def update_user_role(user_id: int, role: str, db: Session = Depends(get_db)):
+    updating_user = update_role(db=db, user_id=user_id, role=role)
+    return updating_user
 
 if __name__ == "__main__":
     uvicorn.run("main:app" , host="127.0.0.1", port=8080, reload=True)

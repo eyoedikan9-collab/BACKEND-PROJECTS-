@@ -30,7 +30,8 @@ class UserPublic(BaseModel):
     first_name: str
     last_name: str
     email: str
-
+    role: str
+    
     model_config = ConfigDict(from_attributes=True)
 
 class Token(BaseModel):

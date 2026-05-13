@@ -7,7 +7,6 @@ from database import get_db
 from models import User, Tasks
 from auth import hash_password
 
-
 def get_user_by_email(db: Session, email: str) -> User | None:
         return db.query(User).filter(User.email == email).first()
 
@@ -62,3 +61,13 @@ def delete_user(db: Session, user_id: int):
     db.commit()
 
     return user
+
+
+def update_role(db: Session, user_id: int, role: str) -> UserPublic:
+    user = db.get(User, user_id)
+    user.role = role
+    db.commit()
+    db.refresh(user)
+
+    return user
+

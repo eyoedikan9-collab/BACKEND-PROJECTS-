@@ -6,13 +6,13 @@ from fastapi.security import OAuth2PasswordBearer
 from fastapi import Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from models import User
+from schema import UserPublic
+from config import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES 
+from typing import Annotated 
+
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
 
-
-SECRET_KEY = "7f9c2d8a4b1e6c0f93a5d7e8b2c4f1a6e9doc3b7a8f2e5d1c69a0e3f4d8c2b1"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 password_hash = PasswordHash.recommended()
 
@@ -31,7 +31,8 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None) -> s
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
     else:
-        expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        print(type(ACCESS_TOKEN_EXPIRE_MINUTES))
+        expire = datetime.now(timezone.utc) + timedelta(minutes=int(ACCESS_TOKEN_EXPIRE_MINUTES))
 
     to_encode.update({"exp": expire})
 
@@ -63,8 +64,16 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
 
     user = db.query(User).filter(User.user_id == int(user_id)).first()    
     if user is None:        
-            raise credentials_exception    
+            raise credentials_exception
+    user = UserPublic.model_validate(user) 
+  
     return user
+
+ 
+def get_current_admin_user(current_user: Annotated[(User, Depends(get_current_user))]):
+    if current_user.role != "admin":
+                raise HTTPException(status_code=401, detail="User not admin")
+    return current_user
 
 
 
