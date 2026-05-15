@@ -7,7 +7,7 @@ from fastapi import Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from models import User
 from schema import UserPublic
-from config import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES 
+from config import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES, REFRESH_TOKEN_EXPIRE_DAYS 
 from typing import Annotated 
 
 
@@ -34,10 +34,22 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None) -> s
         print(type(ACCESS_TOKEN_EXPIRE_MINUTES))
         expire = datetime.now(timezone.utc) + timedelta(minutes=int(ACCESS_TOKEN_EXPIRE_MINUTES))
 
-    to_encode.update({"exp": expire})
+    to_encode.update({"exp": expire, "type": "access"})
 
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)    
    
+    return encoded_jwt
+
+
+def create_refresh_token(data: dict, expires_delta: timedelta | None = None) -> str:
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.now(timezone.utc) + expires_delta
+    else:
+        expire = datetime.now(timezone.utc) + timedelta(days=int(REFRESH_TOKEN_EXPIRE_DAYS))
+
+    to_encode.update({"exp": expire, "type": "refresh"})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)    
     return encoded_jwt
 
 

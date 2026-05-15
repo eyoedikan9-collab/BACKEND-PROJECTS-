@@ -21,9 +21,31 @@ import auth
 from auth import create_access_token
 from auth import verify_password
 from auth import get_current_admin_user
-
+from auth import create_refresh_token
+from schema import RefreshTokenRequest
+from jose import jwt, JWTError, ExpiredSignatureError
+from config import SECRET_KEY, ALGORITHM
+from schema import Token
 
 app = FastAPI(title="Todo app")
+
+
+@app.post("/auth/refresh")
+def refresh(token: RefreshTokenRequest, db: Session = Depends(get_db)):
+    try:
+        payload = jwt.decode(token.token, SECRET_KEY, algorithms=[ALGORITHM])
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+
+    if payload.get("type") != "refresh":
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+    sub = payload.get("sub")
+    if sub is None:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+    new_access_token = create_access_token(data={"sub": sub})
+    return {"access_token": new_access_token, "token_type": "bearer"}
+
+
 
 @app.post("/auth/token", response_model=Token) 
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)) -> User:
@@ -31,7 +53,8 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
     if not user_by_email or not verify_password(form_data.password, user_by_email.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     token = create_access_token({"sub": str(user_by_email.user_id)}) 
-    return {"access_token": token, "token_type": "bearer"}
+    refresh_token = create_refresh_token({"sub": str(user_by_email.user_id)})
+    return {"access_token": token, "token_type": "bearer", "refresh_token": refresh_token}
 
 
 
