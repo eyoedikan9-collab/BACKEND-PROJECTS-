@@ -33,14 +33,14 @@ class Tasks(Base):
     user_id = mapped_column(ForeignKey("task_users.user_id"))
     date_time: Mapped[str] = mapped_column(String(20))
     duration: Mapped[str] = mapped_column(String(20))
-
+    description: Mapped[str] = mapped_column(String(50))
 
     user: Mapped[User] = relationship(back_populates="task")
     def __repr__(self) -> str:
         return f"Tasks(task_id={self.task_id!r}, task={self.task!r}, date_time={self.date_time!r}, duration={self.duration!r})"
 
 # Base.metadata.drop_all(engine)
-Base.metadata.create_all(engine)
+# Base.metadata.create_all(engine)
 
 
 

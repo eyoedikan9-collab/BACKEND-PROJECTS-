@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from database import engine
-from models_task import User, Tasks
+from models import User, Tasks
 from sqlalchemy import select
 
 session = Session(engine)
