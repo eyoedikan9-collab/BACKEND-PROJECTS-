@@ -4,7 +4,7 @@ class TaskCreate(BaseModel):
     task: str
     date_time: str
     duration: str
-    
+    description: str
 
 class TaskPublic(BaseModel):
     task_id: int
