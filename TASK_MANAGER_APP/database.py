@@ -1,33 +1,38 @@
-from sqlalchemy import create_engine
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from dotenv import load_dotenv
 from dotenv import dotenv_values
-from sqlalchemy.orm import sessionmaker
+# from sqlalchemy.orm import sessionmaker
 
-# load_dotenv()
-# config = dotenv_values(".env")
-# user = config["POSTGRES_USER"]
-# password = config["POSTGRES_PASSWORD"]
-# server = config["POSTGRES_SERVER"]
-# database = config["POSTGRES_DATABASE"]
+load_dotenv()
+config = dotenv_values(".env")
+user = config["POSTGRES_USER"]
+password = config["POSTGRES_PASSWORD"]
+server = config["POSTGRES_SERVER"]
+database = config["POSTGRES_DATABASE"]
 
-DATABASE_URL = "sqlite:///./todo.db"
+# DATABASE_URL = "sqlite:///./todo.db"
 
-engine = create_engine(DATABASE_URL)
+# engine = create_engine(DATABASE_URL)
 
-# engine = create_engine(
-#     f"postgresql+psycopg2://{user}:{password}@{server}/{database}"
-#)
+engine = create_async_engine(
+    f"postgresql+asyncpg://{user}:{password}@{server}/{database}"
+)
 
-SessionLocal = sessionmaker(
+AsyncSessionLocal = async_sessionmaker(
     autocommit=False,
     autoflush=False,
     bind=engine,
+    expire_on_commit=False,
 )
 
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close() 
+async def get_db():
+    async with AsyncSessionLocal() as session:
+        yield session
+
+        
+    # db = AsyncSessionLocal()
+    # try:
+    #     yield db
+    # finally:
+    #     db.close() 

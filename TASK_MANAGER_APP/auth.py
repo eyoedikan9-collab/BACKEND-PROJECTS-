@@ -4,11 +4,12 @@ from datetime import datetime, timedelta, timezone
 from database import get_db
 from fastapi.security import OAuth2PasswordBearer
 from fastapi import Depends, HTTPException, status
-from sqlalchemy.orm import Session
 from models import User
 from schema import UserPublic
 from config import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES, REFRESH_TOKEN_EXPIRE_DAYS 
 from typing import Annotated 
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
@@ -53,7 +54,8 @@ def create_refresh_token(data: dict, expires_delta: timedelta | None = None) -> 
     return encoded_jwt
 
 
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+async def get_current_user(
+    token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db))-> UserPublic:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -74,7 +76,8 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
             detail="Token has expired"
         )
 
-    user = db.query(User).filter(User.user_id == int(user_id)).first()    
+    result = await db.execute(select(User).where(User.user_id == int(user_id)))
+    user = result.scalars().first()  
     if user is None:        
             raise credentials_exception
     user = UserPublic.model_validate(user) 
@@ -82,9 +85,9 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     return user
 
  
-def get_current_admin_user(current_user: Annotated[(User, Depends(get_current_user))]):
+async def get_current_admin_user(current_user: Annotated[UserPublic, Depends(get_current_user)]) -> UserPublic:
     if current_user.role != "admin":
-                raise HTTPException(status_code=401, detail="User not admin")
+                raise HTTPException(status_code=403, detail="User not admin")
     return current_user
 
 
